@@ -37,15 +37,23 @@ export interface RecommendationResponse {
 })
 export class RecommendationService {
   private apiUrl = 'https://techwall-app-backend.railway.internal/recommendations';
+  // **POURQUOI cette clé:** Protège l'API contre les abus
+  // - Stockée aussi en variable d'env Railway
+  // - Envoyée dans le header Authorization
+  // - Rate limitée à 10 requêtes/min par IP
+  private apiKey = 'techwall-api-key-v1';
 
   constructor(private http: HttpClient) {}
 
   submitGoal(goalText: string): Observable<RecommendationResponse> {
     const sessionId = this.getOrCreateSessionId();
+    const headers = {
+      'Authorization': `Bearer ${this.apiKey}`,
+    };
     return this.http.post<RecommendationResponse>(this.apiUrl, {
       goalText,
       sessionId,
-    });
+    }, { headers });
   }
 
   private getOrCreateSessionId(): string {
