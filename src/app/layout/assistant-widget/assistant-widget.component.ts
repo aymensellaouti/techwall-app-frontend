@@ -532,8 +532,10 @@ export class AssistantWidgetComponent {
 
     this.isLoading.set(true);
 
-    // Mémoire conversationnelle: on envoie les échanges récents pour les questions de suivi
-    const history = this.buildHistory();
+    // Mémoire conversationnelle: on n'envoie l'historique que si le message ressemble
+    // à une question de SUIVI. Un objectif autonome n'emporte pas de contexte, ce qui
+    // le rend cachable (répétitions instantanées).
+    const history = this.looksLikeFollowUp(userGoal) ? this.buildHistory() : undefined;
 
     this.recommendationService.submitGoal(userGoal, history).subscribe({
       next: (response) => {
@@ -582,6 +584,24 @@ export class AssistantWidgetComponent {
         /* best-effort: on n'embête pas l'utilisateur si le feedback n'a pas été enregistré */
       },
     });
+  }
+
+  /**
+   * Heuristique: le message est-il une question de SUIVI (qui a besoin du contexte) ?
+   * On envoie l'historique seulement dans ce cas, sinon on traite l'objectif comme
+   * autonome (cachable). Détecte les connecteurs de début et les marqueurs anaphoriques.
+   */
+  private looksLikeFollowUp(raw: string): boolean {
+    const t = raw
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .trim();
+    // Nécessite un échange précédent
+    if (this.messages().slice(1, -1).length === 0) return false;
+    const startsWith = /^(et|puis|ensuite|apres|aussi|ok|d'accord|donc|sinon|alors)\b/.test(t);
+    const contains = /\b(approfondir|plus loin|davantage|autre chose|autre exemple|encore|la suite|meme sujet|ce sujet|celui|celle|ceux|ca|cela)\b/.test(t);
+    return startsWith || contains;
   }
 
   /**
