@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { CatalogService } from '../../core/services/catalog.service';
 import { Category, Playlist, Founder } from '../../core/models/catalog';
 import { HeaderComponent } from '../../layout/header/header.component';
@@ -8,7 +9,7 @@ import { FooterComponent } from '../../layout/footer/footer.component';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, HeaderComponent, FooterComponent],
+  imports: [CommonModule, RouterLink, HeaderComponent, FooterComponent],
   template: `
     <app-header></app-header>
     <section class="hero">
@@ -19,7 +20,7 @@ import { FooterComponent } from '../../layout/footer/footer.component';
           <p class="lede">Développement web (Symfony, Angular, NestJs), Big Data (Hadoop, Spark) et cybersécurité — des cours gratuits en français, conçus par des enseignants-chercheurs.</p>
           <div class="cta-row">
             <a class="btn" href="https://youtube.com/@TechWall" target="_blank">S'abonner sur YouTube</a>
-            <a class="btn btn-ghost" href="/courses">Voir les cours</a>
+            <a class="btn btn-ghost" routerLink="/courses">Voir les cours</a>
           </div>
         </div>
         <div class="hero-panel">
@@ -40,10 +41,10 @@ import { FooterComponent } from '../../layout/footer/footer.component';
       <div class="block-inner">
         <div class="block-head">
           <h2>Explore par catégorie</h2>
-          <a class="see-all" href="/courses">Tout voir →</a>
+          <a class="see-all" routerLink="/courses">Tout voir →</a>
         </div>
         <div class="cat-grid">
-          <a class="cat-card" *ngFor="let cat of categories()" href="/courses">
+          <a class="cat-card" *ngFor="let cat of categories()" [routerLink]="['/courses']" [queryParams]="{ category: cat.key }">
             <div class="cat-tag" [style.background]="getCategoryColor(cat.key)">{{ cat.key.substring(0, 3).toUpperCase() }}</div>
             <div class="cat-title">{{ cat.label }}</div>
             <div class="cat-desc">{{ cat.description }}</div>
@@ -57,7 +58,7 @@ import { FooterComponent } from '../../layout/footer/footer.component';
       <div class="block-inner">
         <div class="block-head">
           <h2>Cours récents</h2>
-          <a class="see-all" href="/courses">Tout voir →</a>
+          <a class="see-all" routerLink="/recent">Tout voir →</a>
         </div>
         <div class="video-grid">
           <div class="video-card" *ngFor="let video of recentVideos() | slice:0:4">

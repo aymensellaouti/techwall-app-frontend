@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { CatalogService } from '../../core/services/catalog.service';
 import { Category, Playlist } from '../../core/models/catalog';
 import { HeaderComponent } from '../../layout/header/header.component';
@@ -93,11 +94,15 @@ export class CoursesComponent implements OnInit {
   playlists = signal<Playlist[]>([]);
   activeFilter = signal<string | null>(null);
 
-  constructor(private catalog: CatalogService) {}
+  constructor(private catalog: CatalogService, private route: ActivatedRoute) {}
 
   ngOnInit() {
     this.catalog.getCategories().subscribe(cats => this.categories.set(cats));
     this.catalog.getPlaylists().subscribe(p => this.playlists.set(p));
+    // Pré-filtre selon ?category=<key> (venant des cartes catégorie de la home)
+    this.route.queryParamMap.subscribe(params => {
+      this.activeFilter.set(params.get('category'));
+    });
   }
 
   setFilter(key: string | null) {
