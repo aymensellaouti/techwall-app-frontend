@@ -57,6 +57,15 @@ export class RecommendationService {
     return this.http.post<RecommendationResponse>(this.apiUrl, body, { headers });
   }
 
+  sendFeedback(videoId: string, vote: 'up' | 'down', goalText?: string): Observable<{ ok: boolean }> {
+    const headers = { 'Authorization': `Bearer ${this.apiKey}` };
+    return this.http.post<{ ok: boolean }>(
+      `${this.apiUrl}/feedback`,
+      { sessionId: this.getOrCreateSessionId(), videoId, vote, goalText },
+      { headers },
+    );
+  }
+
   private getOrCreateSessionId(): string {
     const storageKey = 'techwall_session_id';
     let sessionId = localStorage.getItem(storageKey);

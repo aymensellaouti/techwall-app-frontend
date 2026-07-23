@@ -56,6 +56,15 @@ interface ChatMessage {
                               <span class="axis-tag">{{ axis }}</span>
                             }
                           </div>
+                          <div class="video-feedback">
+                            @if (feedbackGiven(video.videoId)) {
+                              <span class="fb-thanks">Merci pour ton retour !</span>
+                            } @else {
+                              <span class="fb-label">Utile ?</span>
+                              <button class="fb-btn" title="Utile" (click)="rateVideo(video.videoId)">👍</button>
+                              <button class="fb-btn" title="Pas utile" (click)="rateVideo(video.videoId, 'down')">👎</button>
+                            }
+                          </div>
                         </div>
                       }
                     </div>
@@ -328,6 +337,37 @@ interface ChatMessage {
       font-weight: 600;
     }
 
+    .video-feedback {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .fb-label {
+      font-size: 11px;
+      color: var(--ink-muted);
+    }
+
+    .fb-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+      padding: 3px 6px;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .fb-btn:hover { background: var(--bg-card-hover); transform: translateY(-1px); }
+
+    .fb-thanks {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
     .fallback-section {
       margin-top: 8px;
       border-top: 1px solid var(--border);
@@ -522,6 +562,24 @@ export class AssistantWidgetComponent {
       ...msgs,
       { type: 'bot', content, timestamp: new Date() },
     ]);
+  }
+
+  // Feedback 👍/👎 par vidéo (videoId -> vote)
+  feedback = signal<Record<string, 'up' | 'down'>>({});
+
+  feedbackGiven(videoId: string): 'up' | 'down' | undefined {
+    return this.feedback()[videoId];
+  }
+
+  rateVideo(videoId: string, vote: 'up' | 'down' = 'up') {
+    if (this.feedbackGiven(videoId)) return;
+    // Optimiste: on marque tout de suite, l'appel réseau est best-effort
+    this.feedback.update(f => ({ ...f, [videoId]: vote }));
+    this.recommendationService.sendFeedback(videoId, vote).subscribe({
+      error: () => {
+        /* best-effort: on n'embête pas l'utilisateur si le feedback n'a pas été enregistré */
+      },
+    });
   }
 
   /**
