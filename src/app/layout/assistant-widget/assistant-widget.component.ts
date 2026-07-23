@@ -479,6 +479,15 @@ export class AssistantWidgetComponent {
       return;
     }
 
+    // Objectif trop court (le backend exige >= 10 caractères): message clair plutôt
+    // qu'un 400 affiché comme "service indisponible".
+    if (userGoal.length < 10) {
+      this.addBotTextMessage(
+        "Peux-tu être un peu plus précis ? Décris ton objectif en une phrase, par exemple : « apprendre Angular », « sécuriser une route avec les guards » ou « débuter en Big Data ».",
+      );
+      return;
+    }
+
     this.isLoading.set(true);
 
     this.recommendationService.submitGoal(userGoal).subscribe({
