@@ -112,11 +112,6 @@ interface ChatMessage {
             {{ isLoading() ? '⏳' : '📤' }}
           </button>
         </div>
-
-        <!-- Error Display -->
-        @if (errorMessage()) {
-          <div class="error-banner">{{ errorMessage() }}</div>
-        }
       </div>
     </div>
   `,
@@ -414,15 +409,6 @@ interface ChatMessage {
       cursor: not-allowed;
     }
 
-    .error-banner {
-      padding: 8px 12px;
-      background: color-mix(in oklch, red 12%, transparent);
-      color: color-mix(in oklch, red 70%, var(--ink));
-      font-size: 12px;
-      border-top: 1px solid var(--border);
-      line-height: 1.3;
-    }
-
     @media (max-width: 600px) {
       .assistant-panel {
         width: calc(100vw - 40px);
@@ -446,7 +432,6 @@ export class AssistantWidgetComponent {
       timestamp: new Date(),
     },
   ]);
-  errorMessage = signal<string | null>(null);
 
   @ViewChild('messagesContainer') messagesContainer?: ElementRef<HTMLDivElement>;
 
@@ -474,7 +459,6 @@ export class AssistantWidgetComponent {
 
     const userGoal = this.goalText.trim();
     this.goalText = '';
-    this.errorMessage.set(null);
 
     // Ajoute le message utilisateur
     this.messages.update(msgs => [
@@ -490,14 +474,33 @@ export class AssistantWidgetComponent {
 
     this.recommendationService.submitGoal(userGoal).subscribe({
       next: (response) => {
-        this.addBotRecommendationMessage(response);
+        const hasRecos = (response?.plan?.recommendations?.length ?? 0) > 0;
+        const hasFallback = !!response?.plan?.fallbackPlaylist;
+        if (hasRecos || hasFallback) {
+          this.addBotRecommendationMessage(response);
+        } else {
+          // Réponse reçue mais aucune vidéo pertinente trouvée
+          this.addBotTextMessage(
+            "Je n'ai pas trouvé de vidéo qui corresponde précisément à cet objectif dans le catalogue TechWall. Essaie de le reformuler ou d'être un peu plus précis, par exemple : « sécuriser une route Angular avec les guards » ou « débuter avec Symfony ».",
+          );
+        }
         this.isLoading.set(false);
       },
-      error: (err) => {
-        this.errorMessage.set(err.error?.message || 'Une erreur est survenue');
+      error: () => {
+        // Panne LLM, souci réseau ou service indisponible : on parle à l'utilisateur, pas de jargon technique
+        this.addBotTextMessage(
+          "Désolé, je n'arrive pas à générer de recommandation pour le moment. Le service est peut-être momentanément indisponible. Réessaie dans quelques instants, et si le problème persiste tu peux explorer les cours directement depuis le menu.",
+        );
         this.isLoading.set(false);
       },
     });
+  }
+
+  private addBotTextMessage(content: string) {
+    this.messages.update(msgs => [
+      ...msgs,
+      { type: 'bot', content, timestamp: new Date() },
+    ]);
   }
 
   private addBotRecommendationMessage(response: RecommendationResponse) {
