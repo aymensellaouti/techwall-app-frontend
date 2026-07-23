@@ -470,6 +470,15 @@ export class AssistantWidgetComponent {
       },
     ]);
 
+    // **POURQUOI:** les questions conversationnelles (qui es-tu, à quoi tu sers,
+    // bonjour, merci...) ne sont PAS des objectifs d'apprentissage. On y répond
+    // localement, sans appeler l'API de recommandation (instantané, pas de coût LLM).
+    const cannedReply = this.detectConversationalIntent(userGoal);
+    if (cannedReply) {
+      this.addBotTextMessage(cannedReply);
+      return;
+    }
+
     this.isLoading.set(true);
 
     this.recommendationService.submitGoal(userGoal).subscribe({
@@ -501,6 +510,51 @@ export class AssistantWidgetComponent {
       ...msgs,
       { type: 'bot', content, timestamp: new Date() },
     ]);
+  }
+
+  /**
+   * Détecte les messages conversationnels (identité, rôle, salutation, remerciement)
+   * qui ne sont pas des objectifs d'apprentissage, et renvoie une réponse toute prête.
+   * Retourne null si le message doit partir vers l'API de recommandation.
+   */
+  private detectConversationalIntent(raw: string): string | null {
+    // Normalisation: minuscules, sans accents, sans ponctuation finale
+    const t = raw
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[!?.]+$/, '')
+      .trim();
+    const wordCount = t.split(/\s+/).filter(Boolean).length;
+
+    const aboutPatterns: RegExp[] = [
+      /qui (es[- ]?tu|est[- ]?ce que tu es|tu es)/,
+      /(t'?es|tu es) qui/,
+      /a quoi (tu sers|sers[- ]?tu|ca sert|tu es utile)/,
+      /tu sers a quoi/,
+      /que (fais[- ]?tu|peux[- ]?tu faire|sais[- ]?tu faire)/,
+      /qu'?est[- ]?ce que tu (fais|peux|sais)/,
+      /comment (ca marche|tu marches|ca fonctionne|t'?utiliser|je t'?utilise)/,
+      /c'?est quoi (ce|cet|cette|ton|toi|ton role)/,
+      /ton (role|but|utilite|objectif)/,
+      /presente[- ]?toi/,
+      /^(aide|help|\?)$/,
+    ];
+    if (aboutPatterns.some(re => re.test(t))) {
+      return "Je suis l'assistant d'apprentissage de TechWall 🤖. Mon rôle : tu me décris un objectif (par ex. « apprendre Angular », « sécuriser une route avec les guards », « débuter en Big Data ») et je te recommande les vidéos du catalogue TechWall les plus adaptées, avec le pourquoi de chaque choix. Qu'aimerais-tu apprendre ?";
+    }
+
+    // Remerciement (message court uniquement, pour ne pas capter un objectif qui contient "merci")
+    if (/\b(merci|thanks|thank you|thx)\b/.test(t) && wordCount <= 4) {
+      return "Avec plaisir ! 😊 Donne-moi un autre objectif d'apprentissage quand tu veux.";
+    }
+
+    // Salutation seule (message court, sinon on laisse passer un vrai objectif)
+    if (/^(bonjour|bonsoir|salut|coucou|hello|hey|hi|yo)\b/.test(t) && wordCount <= 3) {
+      return "Bonjour 👋 Je suis l'assistant TechWall. Dis-moi ce que tu veux apprendre et je te recommande les vidéos adaptées du catalogue.";
+    }
+
+    return null;
   }
 
   private addBotRecommendationMessage(response: RecommendationResponse) {
