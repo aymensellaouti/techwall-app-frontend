@@ -43,15 +43,18 @@ export class RecommendationService {
 
   constructor(private http: HttpClient) {}
 
-  submitGoal(goalText: string): Observable<RecommendationResponse> {
+  submitGoal(goalText: string, history?: string): Observable<RecommendationResponse> {
     const sessionId = this.getOrCreateSessionId();
     const headers = {
       'Authorization': `Bearer ${this.apiKey}`,
     };
-    return this.http.post<RecommendationResponse>(this.apiUrl, {
+    const body: { goalText: string; sessionId: string; history?: string } = {
       goalText,
       sessionId,
-    }, { headers });
+    };
+    // Historique des échanges récents (questions de suivi) si présent
+    if (history) body.history = history;
+    return this.http.post<RecommendationResponse>(this.apiUrl, body, { headers });
   }
 
   private getOrCreateSessionId(): string {

@@ -490,7 +490,10 @@ export class AssistantWidgetComponent {
 
     this.isLoading.set(true);
 
-    this.recommendationService.submitGoal(userGoal).subscribe({
+    // Mémoire conversationnelle: on envoie les échanges récents pour les questions de suivi
+    const history = this.buildHistory();
+
+    this.recommendationService.submitGoal(userGoal, history).subscribe({
       next: (response) => {
         const hasRecos = (response?.plan?.recommendations?.length ?? 0) > 0;
         const hasFallback = !!response?.plan?.fallbackPlaylist;
@@ -519,6 +522,28 @@ export class AssistantWidgetComponent {
       ...msgs,
       { type: 'bot', content, timestamp: new Date() },
     ]);
+  }
+
+  /**
+   * Construit un transcript des derniers échanges (hors message d'accueil et hors
+   * objectif courant déjà ajouté) pour donner du contexte au LLM sur les questions
+   * de suivi. Retourne undefined si c'est le premier vrai échange.
+   */
+  private buildHistory(): string | undefined {
+    const msgs = this.messages();
+    // slice(1, -1): retire le message d'accueil (1er) et l'objectif courant (dernier)
+    const prior = msgs.slice(1, -1).slice(-4);
+    if (prior.length === 0) return undefined;
+
+    const lines = prior.map(m => {
+      const who = m.type === 'user' ? 'Utilisateur' : 'Assistant';
+      let content = (m.content || '').slice(0, 300);
+      if (m.recommendations?.length) {
+        content += ' [vidéos proposées: ' + m.recommendations.map(r => r.title).join('; ') + ']';
+      }
+      return `${who}: ${content}`;
+    });
+    return lines.join('\n');
   }
 
   /**
