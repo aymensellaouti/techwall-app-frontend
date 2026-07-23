@@ -108,10 +108,10 @@ interface ChatMessage {
           <textarea
             [(ngModel)]="goalText"
             [disabled]="isLoading()"
-            placeholder="Décrivez votre objectif d'apprentissage..."
+            placeholder="Décrivez votre objectif d'apprentissage... (Entrée pour envoyer, Maj+Entrée pour un retour à la ligne)"
             rows="2"
             class="goal-input"
-            (keydown.enter)="onEnterKey($event)"
+            (keydown)="onKeydown($event)"
           ></textarea>
           <button
             (click)="submitGoal()"
@@ -487,9 +487,11 @@ export class AssistantWidgetComponent {
     this.isOpen.update(v => !v);
   }
 
-  onEnterKey(event: Event) {
-    const keyEvent = event as KeyboardEvent;
-    if (keyEvent.ctrlKey) {
+  onKeydown(event: KeyboardEvent) {
+    // Entrée seule -> envoie (on empêche le retour à la ligne).
+    // Maj+Entrée -> comportement par défaut (retour à la ligne).
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
       this.submitGoal();
     }
   }
