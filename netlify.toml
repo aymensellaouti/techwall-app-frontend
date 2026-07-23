@@ -1,0 +1,15 @@
+# Netlify configuration for TechWall frontend
+# Passe NG_APP_API_KEY au build Angular
+
+[build]
+  command = "npm run build"
+  publish = "dist/frontend/browser"
+
+[build.environment]
+  # Remplacer par la vraie clé depuis Netlify Dashboard > Build & deploy > Environment
+  NG_APP_API_KEY = "techwall-api-key-v1"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

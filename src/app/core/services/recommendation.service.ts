@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface VideoRecommendation {
   type: 'video';
@@ -36,12 +37,9 @@ export interface RecommendationResponse {
   providedIn: 'root',
 })
 export class RecommendationService {
-  private apiUrl = 'https://techwall-app-backend.railway.internal/recommendations';
-  // **POURQUOI cette clé:** Protège l'API contre les abus
-  // - Stockée aussi en variable d'env Railway
-  // - Envoyée dans le header Authorization
-  // - Rate limitée à 10 requêtes/min par IP
-  private apiKey = 'techwall-api-key-v1';
+  // URLs et clé chargées depuis environment.ts / environment.prod.ts
+  private apiUrl = `${environment.apiUrl}/recommendations`;
+  private apiKey = environment.apiKey;
 
   constructor(private http: HttpClient) {}
 
